@@ -231,6 +231,7 @@ module.exports = function () {
           }
         }, _this4.uploadFileRequestOptions)).catch(function (err) {
           if (maxAttempts <= 0) {
+            console.log('maxAttempts: ' + maxAttempts); // eslint-disable-line
             return Promise.reject(err);
           }
           maxAttempts--; // eslint-disable-line
