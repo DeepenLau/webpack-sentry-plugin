@@ -61,9 +61,9 @@ module.exports = class SentryPlugin {
       // eslint-disable-next-line no-console
       console.warn(
         'requestOptions is deprecated. ' +
-        'use createReleaseRequestOptions and ' +
-        'uploadFileRequestOptions instead; ' +
-        'see https://github.com/40thieves/webpack-sentry-plugin/pull/43'
+          'use createReleaseRequestOptions and ' +
+          'uploadFileRequestOptions instead; ' +
+          'see https://github.com/40thieves/webpack-sentry-plugin/pull/43',
       )
     }
 
@@ -193,7 +193,8 @@ module.exports = class SentryPlugin {
   }
 
   uploadFile({ path, name }) {
-    return request(
+    let maxAttempts = this.uploadFileRequestOptions.customMaxRetries || 2
+    const requestApi = () => request(
       this.combineRequestOptions(
         {
           url: `${this.sentryReleaseUrl()}/${this.releaseVersion}/files/`,
@@ -209,8 +210,35 @@ module.exports = class SentryPlugin {
         },
         this.uploadFileRequestOptions,
       ),
-    )
+    ).catch((err) => {
+      if (maxAttempts <= 0) {
+        return Promise.reject(err)
+      }
+      maxAttempts-- // eslint-disable-line
+      return requestApi()
+    })
+    return requestApi()
   }
+
+  // uploadFile({ path, name }) {
+  //   return request(
+  //     this.combineRequestOptions(
+  //       {
+  //         url: `${this.sentryReleaseUrl()}/${this.releaseVersion}/files/`,
+  //         method: 'POST',
+  //         auth: {
+  //           bearer: this.apiKey,
+  //         },
+  //         headers: {},
+  //         formData: {
+  //           file: fs.createReadStream(path),
+  //           name: this.filenameTransform(name),
+  //         },
+  //       },
+  //       this.uploadFileRequestOptions,
+  //     ),
+  //   )
+  // }
 
   sentryReleaseUrl() {
     return `${this.baseSentryURL}/organizations/${this
